@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Gym Tracker — Chest & Back</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; color: #1a1a2e; min-height: 100vh; font-size: 16px; }
+
+  header {
+    background: #022F65;
+    color: white;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  header h1 { font-size: 1.1rem; }
+  header span { font-size: 0.8rem; color: #00D686; }
+
+  .container { max-width: 600px; margin: 0 auto; padding: 16px 12px 80px; }
+
+  .progress-label { font-size: 0.8rem; color: #555; text-align: right; margin-bottom: 4px; }
+  .progress-bar-wrap { background: #e8e8e8; border-radius: 20px; height: 8px; margin-bottom: 16px; overflow: hidden; }
+  .progress-bar { height: 100%; background: linear-gradient(90deg, #022F65, #00D686); border-radius: 20px; transition: width 0.4s ease; }
+
+  /* Timer */
+  .timer-section {
+    background: white; border-radius: 12px; padding: 14px 16px;
+    margin-bottom: 20px; text-align: center; border: 2px solid #e0e0e0;
+  }
+  .timer-label { font-weight: 700; font-size: 0.85rem; color: #022F65; }
+  .timer-display { font-size: 2.6rem; font-weight: 800; color: #022F65; letter-spacing: 3px; margin: 6px 0; }
+  .timer-controls { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .rest-label { font-size: 0.75rem; color: #888; margin-top: 6px; }
+
+  /* Section */
+  .section-header {
+    background: #022F65; color: white;
+    padding: 12px 16px; border-radius: 10px 10px 0 0;
+    font-size: 1rem; font-weight: 700;
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 22px;
+  }
+  .badge {
+    background: #00D686; color: #022F65;
+    font-size: 0.68rem; font-weight: 800;
+    padding: 2px 8px; border-radius: 20px;
+  }
+
+  /* Card */
+  .exercise-card {
+    background: white;
+    border-left: 4px solid #00D686;
+    padding: 14px 14px;
+    margin-bottom: 2px;
+  }
+  .exercise-card:last-child { border-radius: 0 0 10px 10px; }
+
+  .ex-name { font-weight: 700; font-size: 1rem; }
+  .ex-sub { font-size: 0.75rem; color: #888; margin-top: 2px; }
+
+  /* Sets table */
+  .sets-table { width: 100%; margin-top: 12px; border-collapse: collapse; }
+  .sets-table th {
+    font-size: 0.72rem; color: #888; font-weight: 600;
+    text-align: left; padding: 2px 4px 6px;
+    border-bottom: 1px solid #eee;
+  }
+  .sets-table td { padding: 6px 4px; vertical-align: middle; }
+
+  .set-btn {
+    width: 44px; height: 44px;
+    border-radius: 50%; border: 2px solid #ddd;
+    background: white; font-size: 0.75rem; font-weight: 700;
+    cursor: pointer; transition: all 0.2s; color: #999;
+    display: flex; align-items: center; justify-content: center;
+    touch-action: manipulation;
+  }
+  .set-btn.done { background: #00D686; border-color: #00D686; color: #022F65; }
+  .set-btn.active { border-color: #022F65; color: #022F65; background: #e8f0ff; }
+
+  .weight-input, .reps-input {
+    padding: 7px 6px; border: 1.5px solid #ddd;
+    border-radius: 8px; font-size: 0.9rem;
+    text-align: center; background: #f9f9f9;
+    -webkit-appearance: none;
+  }
+  .weight-input { width: 68px; }
+  .reps-input { width: 54px; }
+  .weight-input:focus, .reps-input:focus { outline: none; border-color: #022F65; background: white; }
+  .unit-label { font-size: 0.7rem; color: #aaa; margin-left: 2px; }
+
+  /* Notes */
+  .notes-toggle {
+    font-size: 0.78rem; color: #022F65; cursor: pointer;
+    margin-top: 10px; display: inline-flex; align-items: center; gap: 4px; opacity: 0.65;
+    padding: 4px 0;
+  }
+  .notes-toggle:hover { opacity: 1; }
+  .notes-area { display: none; margin-top: 8px; }
+  .notes-area textarea {
+    width: 100%; padding: 9px 10px;
+    border: 1.5px solid #ddd; border-radius: 8px;
+    font-size: 0.85rem; font-family: inherit;
+    resize: vertical; min-height: 60px;
+    background: #fafafa; color: #333;
+  }
+  .notes-area textarea:focus { outline: none; border-color: #022F65; background: white; }
+  .notes-area textarea::placeholder { color: #bbb; }
+
+  .tip-box {
+    background: #fff8e1; border-left: 3px solid #f9a825;
+    border-radius: 0 6px 6px 0;
+    padding: 7px 10px; font-size: 0.75rem; color: #555;
+    margin-top: 8px;
+  }
+
+  /* Buttons */
+  .btn {
+    padding: 10px 18px; border-radius: 10px; border: none;
+    font-weight: 700; font-size: 0.85rem; cursor: pointer;
+    transition: opacity 0.2s; touch-action: manipulation;
+    min-height: 44px;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn-primary { background: #022F65; color: white; }
+  .btn-green { background: #00D686; color: #022F65; }
+  .btn-gray { background: #e0e0e0; color: #555; }
+
+  .complete-banner {
+    display: none; background: #022F65; color: white;
+    text-align: center; padding: 20px; border-radius: 12px; margin-top: 28px;
+  }
+  .complete-banner h2 { color: #00D686; font-size: 1.4rem; }
+  .complete-banner p { margin-top: 6px; font-size: 0.9rem; color: #cdd; }
+
+  .action-row {
+    display: flex; gap: 10px; justify-content: center;
+    flex-wrap: wrap; margin-top: 20px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏋️ Chest & Back</h1>
+  <span id="date-display"></span>
+</header>
+
+<div class="container">
+
+  <div class="progress-label" id="progress-label">0 of 0 sets complete</div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+  </div>
+
+  <div class="timer-section">
+    <div class="timer-label">⏱ Rest Timer</div>
+    <div class="timer-display" id="timer-display">02:00</div>
+    <div class="timer-controls">
+      <button class="btn btn-green" onclick="startTimer()">Start</button>
+      <button class="btn btn-gray" onclick="resetTimer()">Reset</button>
+      <button class="btn btn-primary" onclick="setTimer(120)">2:00</button>
+      <button class="btn btn-primary" onclick="setTimer(90)">1:30</button>
+      <button class="btn btn-primary" onclick="setTimer(60)">1:00</button>
+    </div>
+    <div class="rest-label">Auto-starts when a set is marked done</div>
+  </div>
+
+  <div class="section-header">🫁 Chest <span class="badge">3 SETS</span></div>
+  <div id="chest"></div>
+
+  <div class="section-header">💪 Back <span class="badge">3 SETS</span></div>
+  <div id="back"></div>
+
+  <div class="section-header">🔥 Core <span class="badge">2 SETS</span></div>
+  <div id="core"></div>
+
+  <div class="complete-banner" id="complete-banner">
+    <h2>🎉 Workout Complete!</h2>
+    <p id="complete-time"></p>
+    <p style="margin-top:8px; font-size:0.82rem; color:#aac">Great session — export your results below.</p>
+  </div>
+
+  <div class="action-row">
+    <button class="btn btn-green" onclick="exportCSV()">⬇ Export to CSV</button>
+    <button class="btn btn-gray" onclick="resetWorkout()">↺ Reset</button>
+  </div>
+
+</div>
+
+<script>
+const workoutData = {
+  chest: [
+    { name: 'Smith Machine Bench Press', defaultWeight: 135, unit: 'lbs', sets: 3, note: '' },
+    { name: 'Incline Press',             defaultWeight: 105, unit: 'lbs', sets: 3, note: '' },
+    { name: 'Pec Machine (Fly)',          defaultWeight: null, unit: 'lbs', sets: 3, note: '' },
+  ],
+  back: [
+    { name: 'Lat Pulldown',              defaultWeight: null, unit: 'lbs', sets: 3, note: '' },
+    { name: 'Seated Row',                defaultWeight: null, unit: 'lbs', sets: 3, note: '' },
+    { name: 'Reverse Grip Pulldown',     defaultWeight: null, unit: 'lbs', sets: 3, note: 'Shoulder-width underhand grip — hits lower lats. Use same weight as or slightly less than standard pulldown.' },
+  ],
+  core: [
+    { name: 'Decline Sit-Ups',           defaultWeight: null, unit: 'reps', sets: 2, note: '' },
+    { name: 'Hanging Knee Raises',       defaultWeight: null, unit: 'reps', sets: 2, note: '' },
+    { name: 'Ab Wheel Rollout',          defaultWeight: null, unit: 'reps', sets: 2, note: 'No ab wheel? Substitute cable crunches — same deep core engagement on any cable machine.' },
+  ]
+};
+
+let setsState = {};
+let totalSets = 0;
+let completedSets = 0;
+let workoutStartTime = null;
+let timerInterval = null;
+let timerSeconds = 120;
+let timerRunning = false;
+
+function buildSection(sectionId, exercises) {
+  const container = document.getElementById(sectionId);
+  exercises.forEach((ex, idx) => {
+    const key = sectionId + '_' + idx;
+    setsState[key] = Array(ex.sets).fill(false);
+    totalSets += ex.sets;
+
+    const card = document.createElement('div');
+    card.className = 'exercise-card';
+
+    let tableRows = '';
+    for (let s = 0; s < ex.sets; s++) {
+      const weightCell = ex.defaultWeight !== null
+        ? `<input class="weight-input" id="wt_${key}_${s}" type="number" value="${ex.defaultWeight}" min="0"> <span class="unit-label">${ex.unit}</span>`
+        : `<input class="weight-input" id="wt_${key}_${s}" type="number" placeholder="lbs" min="0"> <span class="unit-label">${ex.unit}</span>`;
+
+      tableRows += `
+        <tr>
+          <td><button class="set-btn active" id="setbtn_${key}_${s}" onclick="toggleSet('${key}',${s})">S${s+1}</button></td>
+          <td>${weightCell}</td>
+          <td><input class="reps-input" id="reps_${key}_${s}" type="number" placeholder="reps" min="1"></td>
+        </tr>`;
+    }
+
+    const tipHtml = ex.note ? `<div class="tip-box">💡 ${ex.note}</div>` : '';
+
+    card.innerHTML = `
+      <div class="ex-name">${ex.name}</div>
+      <div class="ex-sub">${ex.sets} sets</div>
+      <table class="sets-table">
+        <thead><tr>
+          <th style="width:52px">Set</th>
+          <th>Weight</th>
+          <th>Reps</th>
+        </tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+      ${tipHtml}
+      <div class="notes-toggle" onclick="toggleNotes('notes_${key}', this)">📝 Add note</div>
+      <div class="notes-area" id="notes_${key}">
+        <textarea placeholder="Form cues, how it felt, next session goal…"></textarea>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function toggleNotes(id, el) {
+  const area = document.getElementById(id);
+  const visible = area.style.display === 'block';
+  area.style.display = visible ? 'none' : 'block';
+  el.textContent = visible ? '📝 Add note' : '📝 Hide note';
+}
+
+function toggleSet(key, setIdx) {
+  if (!workoutStartTime) workoutStartTime = Date.now();
+  setsState[key][setIdx] = !setsState[key][setIdx];
+  const btn = document.getElementById(`setbtn_${key}_${setIdx}`);
+  if (setsState[key][setIdx]) {
+    btn.classList.remove('active'); btn.classList.add('done');
+    btn.textContent = '✓'; completedSets++;
+    startTimer();
+  } else {
+    btn.classList.remove('done'); btn.classList.add('active');
+    btn.textContent = 'S' + (setIdx + 1); completedSets--;
+  }
+  updateProgress();
+}
+
+function updateProgress() {
+  const pct = totalSets > 0 ? (completedSets / totalSets) * 100 : 0;
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = `${completedSets} of ${totalSets} sets complete`;
+  if (completedSets === totalSets && totalSets > 0) showComplete();
+}
+
+function showComplete() {
+  const banner = document.getElementById('complete-banner');
+  banner.style.display = 'block';
+  const elapsed = workoutStartTime ? Math.round((Date.now() - workoutStartTime) / 60000) : 0;
+  document.getElementById('complete-time').textContent = `Total time: ~${elapsed} min`;
+  stopTimer();
+  banner.scrollIntoView({ behavior: 'smooth' });
+}
+
+function exportCSV() {
+  const date = new Date().toLocaleDateString('en-CA');
+  const rows = [['Date','Section','Exercise','Set','Completed','Weight','Unit','Reps','Notes']];
+  const sections = [
+    { id: 'chest', data: workoutData.chest },
+    { id: 'back',  data: workoutData.back },
+    { id: 'core',  data: workoutData.core },
+  ];
+  sections.forEach(sec => {
+    sec.data.forEach((ex, idx) => {
+      const key = sec.id + '_' + idx;
+      const notes = (document.querySelector(`#notes_${key} textarea`)?.value || '').replace(/"/g,'""');
+      for (let s = 0; s < ex.sets; s++) {
+        const done   = setsState[key]?.[s] ? 'Y' : 'N';
+        const weight = document.getElementById(`wt_${key}_${s}`)?.value || '';
+        const reps   = document.getElementById(`reps_${key}_${s}`)?.value || '';
+        rows.push([date, sec.id, ex.name, `Set ${s+1}`, done, weight, ex.unit, reps, `"${notes}"`]);
+      }
+    });
+  });
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `chest_back_${date}.csv`;
+  a.click();
+}
+
+function setTimer(s) { timerSeconds = s; stopTimer(); renderTimerVal(timerSeconds); document.getElementById('timer-display').style.color = '#022F65'; }
+function startTimer() {
+  if (timerRunning) stopTimer();
+  timerRunning = true;
+  let s = timerSeconds;
+  document.getElementById('timer-display').style.color = '#022F65';
+  timerInterval = setInterval(() => {
+    s--;
+    if (s <= 0) { s = 0; stopTimer(); document.getElementById('timer-display').style.color = '#00D686'; }
+    renderTimerVal(s);
+  }, 1000);
+}
+function stopTimer() { clearInterval(timerInterval); timerRunning = false; }
+function resetTimer() { stopTimer(); renderTimerVal(timerSeconds); document.getElementById('timer-display').style.color = '#022F65'; }
+function renderTimerVal(s) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  document.getElementById('timer-display').textContent = `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+
+function resetWorkout() {
+  if (!confirm('Reset all progress?')) return;
+  location.reload();
+}
+
+document.getElementById('date-display').textContent = new Date().toLocaleDateString('en-CA', { weekday:'short', month:'short', day:'numeric' });
+
+buildSection('chest', workoutData.chest);
+buildSection('back', workoutData.back);
+buildSection('core', workoutData.core);
+updateProgress();
+renderTimerVal(timerSeconds);
+</script>
+</body>
+</html>
