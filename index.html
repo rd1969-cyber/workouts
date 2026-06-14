@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gym Tracker">
+<meta name="theme-color" content="#022F65">
+<title>Gym Tracker</title>
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+  :root {
+    --midnight: #022F65;
+    --midnight-2: #053b7d;
+    --spring: #00D686;
+    --spring-dim: #00b873;
+    --bg: #0a1626;
+    --card: #11203a;
+    --card-2: #16294a;
+    --line: #20355c;
+    --text: #eaf1fb;
+    --muted: #8aa0c2;
+    --danger: #ff5a6e;
+    --radius: 14px;
+    --shadow: 0 4px 18px rgba(0,0,0,0.35);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    padding: 0 0 120px 0;
+    padding-bottom: calc(120px + env(safe-area-inset-bottom));
+  }
+
+  /* ---------- Header ---------- */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: linear-gradient(135deg, var(--midnight), var(--midnight-2));
+    padding: 14px 16px 12px;
+    padding-top: calc(14px + env(safe-area-inset-top));
+    box-shadow: var(--shadow);
+    border-bottom: 2px solid var(--spring);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .brand .dot {
+    width: 12px; height: 12px;
+    background: var(--spring);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--spring);
+    flex: none;
+  }
+  .brand h1 {
+    font-size: 18px;
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .brand .title-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-size: 18px;
+    font-weight: 700;
+    padding: 2px 4px;
+    min-width: 0;
+  }
+  .brand .title-input:focus {
+    outline: none;
+    background: rgba(255,255,255,0.06);
+    border-radius: 6px;
+  }
+
+  .controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  select.template-select {
+    flex: 1;
+    min-width: 0;
+    background: var(--card-2);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 15px;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%2300D686' stroke-width='2' fill='none' stroke-linecap='round'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 30px;
+  }
+
+  /* ---------- Sticky rest timer bar ---------- */
+  .rest-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    background: var(--card-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 6px 6px 6px 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  .rest-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 100%;
+    background: rgba(0,214,134,0.10);
+    transition: width 0.25s linear;
+    pointer-events: none;
+  }
+  .rest-bar.running .rest-fill { background: rgba(0,214,134,0.22); }
+  .rest-bar.done { animation: restflash 0.45s ease 3; }
+  @keyframes restflash {
+    0%,100% { background: var(--card-2); }
+    50% { background: rgba(0,214,134,0.5); }
+  }
+  .rest-time {
+    position: relative;
+    font-size: 24px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--spring);
+    min-width: 66px;
+    text-align: center;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .rest-presets { display: flex; gap: 4px; position: relative; flex: 1; }
+  .rest-presets button {
+    flex: 1;
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    padding: 9px 4px;
+    font-size: 13px;
+    border-radius: 8px;
+  }
+  .rest-presets button.active {
+    background: var(--midnight-2);
+    border-color: var(--spring);
+    color: var(--spring);
+  }
+  .rest-reset {
+    position: relative;
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    padding: 9px 12px;
+    font-size: 13px;
+    border-radius: 8px;
+    flex: none;
+  }
+
+  /* ---------- Buttons ---------- */
+  button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    transition: transform 0.05s ease, opacity 0.15s ease;
+    color: #fff;
+  }
+  button:active { transform: scale(0.96); }
+  .btn-icon {
+    background: var(--card-2);
+    border: 1px solid var(--line);
+    color: var(--spring);
+    width: 42px; height: 42px;
+    font-size: 20px;
+    flex: none;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .btn-primary { background: var(--spring); color: #042b1c; }
+  .btn-outline { background: transparent; border: 1px solid var(--line); color: var(--muted); }
+  .btn-danger-ghost { background: transparent; color: var(--danger); border: 1px solid transparent; }
+
+  /* ---------- Sections ---------- */
+  main { padding: 14px 12px 0; }
+
+  .section {
+    margin-bottom: 18px;
+  }
+  .section-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    padding: 0 2px;
+  }
+  .section-head .stripe {
+    width: 4px;
+    align-self: stretch;
+    background: var(--spring);
+    border-radius: 4px;
+  }
+  .section-head input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-size: 17px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 4px;
+    min-width: 0;
+  }
+  .section-head input:focus {
+    outline: none;
+    background: rgba(255,255,255,0.05);
+    border-radius: 6px;
+  }
+
+  /* ---------- Exercise card ---------- */
+  .exercise {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 12px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow);
+  }
+  .ex-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .ex-head .ex-name {
+    flex: 1;
+    background: var(--card-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-size: 16px;
+    font-weight: 600;
+    padding: 9px 10px;
+    border-radius: 9px;
+    min-width: 0;
+  }
+  .ex-head .ex-name:focus { outline: none; border-color: var(--spring); }
+
+  .sets-table { width: 100%; }
+  .set-row {
+    display: grid;
+    grid-template-columns: 30px 1fr 1fr 34px;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 7px;
+  }
+  .set-row.header {
+    margin-bottom: 6px;
+  }
+  .set-row.header span {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    text-align: center;
+    font-weight: 600;
+  }
+  .set-row.header span.lbl-set { text-align: left; padding-left: 4px; }
+  .set-no {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: 2px solid var(--line);
+    background: var(--card-2);
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .set-no.done {
+    background: var(--spring);
+    border-color: var(--spring);
+    color: #042b1c;
+  }
+  .set-row input.cell {
+    width: 100%;
+    background: var(--card-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-size: 17px;
+    padding: 11px 6px;
+    border-radius: 9px;
+    text-align: center;
+    -moz-appearance: textfield;
+  }
+  .set-row input.cell:focus { outline: none; border-color: var(--spring); background: #0e1f3a; }
+  .set-row input.cell::-webkit-outer-spin-button,
+  .set-row input.cell::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .set-row input.cell.done {
+    border-color: var(--spring);
+    background: rgba(0,214,134,0.12);
+  }
+  .rm-set {
+    background: transparent;
+    color: var(--danger);
+    font-size: 20px;
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0.7;
+  }
+
+  .ex-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .ex-actions button {
+    flex: 1;
+    padding: 9px;
+    font-size: 13px;
+  }
+  .add-set-btn { background: var(--midnight-2); color: var(--spring); border: 1px solid var(--line); }
+  .rm-ex-btn { background: transparent; color: var(--danger); border: 1px solid var(--line); flex: 0 0 auto; width: 44px; }
+
+  .notes {
+    width: 100%;
+    margin-top: 10px;
+    background: var(--card-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-radius: 9px;
+    padding: 9px 10px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 38px;
+  }
+  .notes:focus { outline: none; border-color: var(--spring); }
+  .notes::placeholder { color: var(--muted); }
+
+  .add-ex-btn {
+    width: 100%;
+    background: transparent;
+    border: 1.5px dashed var(--line);
+    color: var(--spring);
+    padding: 12px;
+    font-size: 14px;
+    border-radius: var(--radius);
+  }
+
+  .section-tools {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .add-section-btn {
+    width: 100%;
+    background: transparent;
+    border: 1.5px dashed var(--midnight-2);
+    color: var(--muted);
+    padding: 14px;
+    font-size: 14px;
+    border-radius: var(--radius);
+    margin-bottom: 24px;
+  }
+
+  /* ---------- Bottom action bar ---------- */
+  .bottombar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 40;
+    background: linear-gradient(180deg, rgba(10,22,38,0.0), var(--bg) 24%);
+    padding: 16px 12px;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom));
+    display: flex;
+    gap: 8px;
+  }
+  .bottombar button {
+    flex: 1;
+    padding: 14px 8px;
+    font-size: 14px;
+  }
+
+  /* ---------- Toast ---------- */
+  .toast {
+    position: fixed;
+    bottom: 96px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--spring); color: #042b1c;
+    padding: 12px 20px; border-radius: 12px;
+    font-weight: 700; font-size: 14px;
+    box-shadow: var(--shadow);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 70;
+    max-width: 90%;
+    text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.err { background: var(--danger); color: #fff; }
+
+  /* ---------- Modal (save / manage) ---------- */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 55;
+    background: rgba(2,12,26,0.8);
+    display: none; align-items: flex-end; justify-content: center;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--card); width: 100%; max-width: 480px;
+    border-radius: 18px 18px 0 0;
+    border-top: 2px solid var(--spring);
+    padding: 20px 18px;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 30px rgba(0,0,0,0.5);
+  }
+  .modal h3 { margin: 0 0 14px; font-size: 18px; }
+  .modal label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 6px; }
+  .modal input.txt {
+    width: 100%; background: var(--card-2); border: 1px solid var(--line);
+    color: var(--text); font-size: 16px; padding: 12px; border-radius: 10px; margin-bottom: 16px;
+  }
+  .modal input.txt:focus { outline: none; border-color: var(--spring); }
+  .modal-actions { display: flex; gap: 8px; }
+  .modal-actions button { flex: 1; padding: 13px; font-size: 15px; }
+
+  .saved-list { margin: 4px 0 16px; max-height: 260px; overflow-y: auto; }
+  .saved-item {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--card-2); border: 1px solid var(--line);
+    border-radius: 10px; padding: 10px 12px; margin-bottom: 8px;
+  }
+  .saved-item .nm { flex: 1; font-size: 15px; font-weight: 600; }
+  .saved-item button { padding: 8px 12px; font-size: 13px; }
+  .saved-empty { color: var(--muted); font-size: 14px; text-align: center; padding: 20px; }
+
+  .hint { color: var(--muted); font-size: 12px; text-align: center; padding: 8px 0 2px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="dot"></span>
+    <input class="title-input" id="workoutTitle" value="Workout" aria-label="Workout name" autocomplete="off">
+  </div>
+  <div class="controls">
+    <select class="template-select" id="templateSelect" aria-label="Load template"></select>
+    <button class="btn-icon" id="manageBtn" title="Manage saved templates">☰</button>
+  </div>
+  <div class="rest-bar" id="restBar">
+    <div class="rest-fill" id="restFill"></div>
+    <div class="rest-time" id="restTime" title="Tap to start / pause">1:30</div>
+    <div class="rest-presets">
+      <button data-sec="60">1:00</button>
+      <button data-sec="90" class="active">1:30</button>
+      <button data-sec="120">2:00</button>
+    </div>
+    <button class="rest-reset" id="restReset">Reset</button>
+  </div>
+</header>
+
+<main id="app"></main>
+
+<div class="bottombar">
+  <button class="btn-outline" id="resetBtn">↺ Reset Sets</button>
+  <button class="btn-outline" id="csvBtn">⬇ CSV</button>
+  <button class="btn-primary" id="saveBtn">💾 Save Template</button>
+</div>
+
+<!-- Save modal -->
+<div class="modal-overlay" id="saveModal">
+  <div class="modal">
+    <h3>Save as Template</h3>
+    <label for="saveName">Template name</label>
+    <input class="txt" id="saveName" placeholder="My Custom Workout" autocomplete="off">
+    <div class="modal-actions">
+      <button class="btn-outline" id="saveCancel">Cancel</button>
+      <button class="btn-primary" id="saveConfirm">Save</button>
+    </div>
+    <div class="hint">Saved to this device's local storage.</div>
+  </div>
+</div>
+
+<!-- Manage modal -->
+<div class="modal-overlay" id="manageModal">
+  <div class="modal">
+    <h3>Saved Templates</h3>
+    <div class="saved-list" id="savedList"></div>
+    <div class="modal-actions">
+      <button class="btn-outline" id="manageClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   Workout Tracker — single file, localStorage backed
+   InXpress brand: Midnight Blue #022F65 / Spring Green #00D686
+   ============================================================ */
+
+const LS_KEY = "wt_saved_templates_v1";
+const LS_LAST = "wt_last_state_v1";
+
+/* ---------- Built-in templates ---------- */
+function uid() { return Math.random().toString(36).slice(2, 9); }
+
+function mkSet(w = "", r = "") { return { id: uid(), weight: w, reps: r, done: false }; }
+function mkEx(name, setCount = 3, notes = "") {
+  return { id: uid(), name, notes, sets: Array.from({ length: setCount }, () => mkSet()) };
+}
+function mkSection(name, exercises) { return { id: uid(), name, exercises }; }
+
+const BUILTINS = {
+  "home-shoulders-arms": {
+    name: "Home — Shoulders & Arms",
+    sections: [
+      mkSection("Shoulders", [
+        mkEx("Dumbbell Shoulder Press", 3),
+        mkEx("Lateral Raise", 3),
+        mkEx("Front Raise", 3),
+        mkEx("Rear Delt Fly", 3),
+      ]),
+      mkSection("Arms", [
+        mkEx("Dumbbell Bicep Curl", 3),
+        mkEx("Hammer Curl", 3),
+        mkEx("Overhead Tricep Extension", 3),
+        mkEx("Tricep Kickback", 3),
+      ]),
+    ],
+  },
+  "gym-chest-back": {
+    name: "Gym — Chest & Back",
+    sections: [
+      mkSection("Chest", [
+        mkEx("Barbell Bench Press", 4),
+        mkEx("Incline Dumbbell Press", 3),
+        mkEx("Cable Fly", 3),
+        mkEx("Push-up", 3),
+      ]),
+      mkSection("Back", [
+        mkEx("Lat Pulldown", 4),
+        mkEx("Seated Cable Row", 3),
+        mkEx("Barbell Row", 3),
+        mkEx("Face Pull", 3),
+      ]),
+    ],
+  },
+  "gym-shoulders-legs": {
+    name: "Gym — Shoulders & Legs",
+    sections: [
+      mkSection("Shoulders", [
+        mkEx("Shoulder Press", 3),
+        mkEx("Lateral Raise", 3),
+        mkEx("Face Pull (Rope)", 3),
+        mkEx("Delt Machine", 3),
+      ]),
+      mkSection("Legs", [
+        mkEx("Smith Machine Squat", 3),
+        mkEx("Leg Press Machine", 3),
+        mkEx("Leg Extension", 3),
+        mkEx("Leg Curl", 3),
+      ]),
+    ],
+  },
+  "home-chest-legs": {
+    name: "Home — Chest & Legs",
+    sections: [
+      mkSection("Chest & Legs Circuit", [
+        mkEx("Standard Push-up", 3),
+        mkEx("Goblet Squat", 3),
+        mkEx("Wide Push-up", 3),
+        mkEx("Walking Lunge (Weighted)", 3),
+        mkEx("Incline Push-up", 3),
+        mkEx("Step-up", 3),
+        mkEx("Military Push-up", 3),
+        mkEx("Bulgarian Split Squat", 3),
+        mkEx("Jumping Squat", 2),
+      ]),
+    ],
+  },
+};
+
+/* ---------- State ---------- */
+let state = null;        // { title, sections: [...] }
+let currentTemplateKey = "home-shoulders-arms";
+
+/* ---------- Persistence helpers ---------- */
+function getSaved() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; }
+  catch { return {}; }
+}
+function setSaved(obj) { localStorage.setItem(LS_KEY, JSON.stringify(obj)); }
+
+function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
+
+function loadBuiltin(key) {
+  const t = BUILTINS[key];
+  // rebuild with fresh ids so editing one doesn't mutate the builtin
+  const fresh = deepClone(t);
+  fresh.sections.forEach(s => {
+    s.id = uid();
+    s.exercises.forEach(e => {
+      e.id = uid();
+      e.sets.forEach(st => st.id = uid());
+    });
+  });
+  return { title: fresh.name, sections: fresh.sections };
+}
+
+function loadState(source) {
+  state = deepClone(source);
+  render();
+  persistLast();
+}
+
+function persistLast() {
+  try {
+    localStorage.setItem(LS_LAST, JSON.stringify({ key: currentTemplateKey, state }));
+  } catch {}
+}
+
+/* ---------- Render ---------- */
+const app = document.getElementById("app");
+const titleInput = document.getElementById("workoutTitle");
+
+function render() {
+  titleInput.value = state.title;
+  app.innerHTML = "";
+
+  state.sections.forEach((section, si) => {
+    const secEl = document.createElement("div");
+    secEl.className = "section";
+
+    // Section header
+    const head = document.createElement("div");
+    head.className = "section-head";
+    const stripe = document.createElement("div");
+    stripe.className = "stripe";
+    const secName = document.createElement("input");
+    secName.value = section.name;
+    secName.setAttribute("aria-label", "Section name");
+    secName.addEventListener("input", e => { section.name = e.target.value; persistLast(); });
+    const rmSec = document.createElement("button");
+    rmSec.className = "btn-danger-ghost";
+    rmSec.style.cssText = "width:42px;height:42px;font-size:18px;flex:none;";
+    rmSec.textContent = "🗑";
+    rmSec.title = "Remove section";
+    rmSec.addEventListener("click", () => {
+      if (confirm(`Remove section "${section.name}"?`)) {
+        state.sections.splice(si, 1);
+        render(); persistLast();
+      }
+    });
+    head.append(stripe, secName, rmSec);
+    secEl.appendChild(head);
+
+    // Exercises
+    section.exercises.forEach((ex, ei) => {
+      secEl.appendChild(renderExercise(section, ex, ei));
+    });
+
+    // Add exercise
+    const addEx = document.createElement("button");
+    addEx.className = "add-ex-btn";
+    addEx.textContent = "+ Add Exercise";
+    addEx.addEventListener("click", () => {
+      section.exercises.push(mkEx("New Exercise", 3));
+      render(); persistLast();
+    });
+    secEl.appendChild(addEx);
+
+    app.appendChild(secEl);
+  });
+
+  // Add section
+  const addSec = document.createElement("button");
+  addSec.className = "add-section-btn";
+  addSec.textContent = "+ Add Section";
+  addSec.addEventListener("click", () => {
+    state.sections.push(mkSection("New Section", [mkEx("New Exercise", 3)]));
+    render(); persistLast();
+  });
+  app.appendChild(addSec);
+}
+
+function renderExercise(section, ex, ei) {
+  const card = document.createElement("div");
+  card.className = "exercise";
+
+  // Head: name + remove
+  const head = document.createElement("div");
+  head.className = "ex-head";
+  const name = document.createElement("input");
+  name.className = "ex-name";
+  name.value = ex.name;
+  name.setAttribute("aria-label", "Exercise name");
+  name.addEventListener("input", e => { ex.name = e.target.value; persistLast(); });
+  head.appendChild(name);
+  card.appendChild(head);
+
+  // Sets table header
+  const table = document.createElement("div");
+  table.className = "sets-table";
+  const hdr = document.createElement("div");
+  hdr.className = "set-row header";
+  hdr.innerHTML = `<span class="lbl-set">Set</span><span>Weight</span><span>Reps</span><span></span>`;
+  table.appendChild(hdr);
+
+  ex.sets.forEach((set, idx) => {
+    table.appendChild(renderSetRow(ex, set, idx));
+  });
+  card.appendChild(table);
+
+  // Actions
+  const actions = document.createElement("div");
+  actions.className = "ex-actions";
+
+  const addSet = document.createElement("button");
+  addSet.className = "add-set-btn";
+  addSet.textContent = "+ Set";
+  addSet.addEventListener("click", () => {
+    // copy weight from last set for convenience
+    const last = ex.sets[ex.sets.length - 1];
+    ex.sets.push(mkSet(last ? last.weight : "", ""));
+    render(); persistLast();
+  });
+
+  const rmEx = document.createElement("button");
+  rmEx.className = "rm-ex-btn";
+  rmEx.textContent = "🗑";
+  rmEx.title = "Remove exercise";
+  rmEx.addEventListener("click", () => {
+    section.exercises.splice(ei, 1);
+    render(); persistLast();
+  });
+
+  actions.append(addSet, rmEx);
+  card.appendChild(actions);
+
+  // Notes
+  const notes = document.createElement("textarea");
+  notes.className = "notes";
+  notes.placeholder = "Notes (form cues, tempo, how it felt)…";
+  notes.value = ex.notes || "";
+  notes.rows = 1;
+  notes.addEventListener("input", e => { ex.notes = e.target.value; persistLast(); });
+  card.appendChild(notes);
+
+  return card;
+}
+
+function renderSetRow(ex, set, idx) {
+  const row = document.createElement("div");
+  row.className = "set-row";
+
+  const no = document.createElement("div");
+  no.className = "set-no" + (set.done ? " done" : "");
+  no.textContent = set.done ? "✓" : (idx + 1);
+  no.title = "Tap to mark set complete";
+
+  const w = document.createElement("input");
+  w.className = "cell" + (set.done ? " done" : "");
+  w.type = "number";
+  w.inputMode = "decimal";
+  w.placeholder = "–";
+  w.value = set.weight;
+  w.setAttribute("aria-label", `Set ${idx + 1} weight`);
+  w.addEventListener("input", e => { set.weight = e.target.value; persistLast(); });
+
+  const r = document.createElement("input");
+  r.className = "cell" + (set.done ? " done" : "");
+  r.type = "number";
+  r.inputMode = "numeric";
+  r.placeholder = "–";
+  r.value = set.reps;
+  r.setAttribute("aria-label", `Set ${idx + 1} reps`);
+  r.addEventListener("input", e => { set.reps = e.target.value; persistLast(); });
+
+  no.addEventListener("click", () => {
+    set.done = !set.done;
+    no.classList.toggle("done", set.done);
+    no.textContent = set.done ? "✓" : (idx + 1);
+    w.classList.toggle("done", set.done);
+    r.classList.toggle("done", set.done);
+    if (set.done) startRest();   // auto-start the rest timer
+    persistLast();
+  });
+
+  const rm = document.createElement("button");
+  rm.className = "rm-set";
+  rm.textContent = "×";
+  rm.title = "Remove set";
+  rm.addEventListener("click", () => {
+    const i = ex.sets.indexOf(set);
+    if (i > -1) { ex.sets.splice(i, 1); render(); persistLast(); }
+  });
+
+  row.append(no, w, r, rm);
+  return row;
+}
+
+/* ---------- Template dropdown ---------- */
+const templateSelect = document.getElementById("templateSelect");
+
+function refreshTemplateDropdown() {
+  const saved = getSaved();
+  templateSelect.innerHTML = "";
+
+  const og1 = document.createElement("optgroup");
+  og1.label = "Built-in";
+  Object.entries(BUILTINS).forEach(([key, t]) => {
+    const o = document.createElement("option");
+    o.value = "builtin:" + key;
+    o.textContent = t.name;
+    og1.appendChild(o);
+  });
+  templateSelect.appendChild(og1);
+
+  const keys = Object.keys(saved);
+  if (keys.length) {
+    const og2 = document.createElement("optgroup");
+    og2.label = "Saved";
+    keys.forEach(name => {
+      const o = document.createElement("option");
+      o.value = "saved:" + name;
+      o.textContent = name;
+      og2.appendChild(o);
+    });
+    templateSelect.appendChild(og2);
+  }
+
+  templateSelect.value = "builtin:" + currentTemplateKey;
+}
+
+templateSelect.addEventListener("change", e => {
+  const val = e.target.value;
+  if (val.startsWith("builtin:")) {
+    const key = val.slice(8);
+    currentTemplateKey = key;
+    loadState(loadBuiltin(key));
+  } else if (val.startsWith("saved:")) {
+    const name = val.slice(6);
+    const saved = getSaved();
+    if (saved[name]) {
+      currentTemplateKey = "saved:" + name;
+      loadState(saved[name]);
+    }
+  }
+  toast("Loaded");
+});
+
+titleInput.addEventListener("input", e => { state.title = e.target.value; persistLast(); });
+
+/* ---------- Save template ---------- */
+const saveModal = document.getElementById("saveModal");
+const saveName = document.getElementById("saveName");
+
+document.getElementById("saveBtn").addEventListener("click", () => {
+  saveName.value = state.title || "";
+  saveModal.classList.add("show");
+  setTimeout(() => saveName.focus(), 50);
+});
+document.getElementById("saveCancel").addEventListener("click", () => saveModal.classList.remove("show"));
+saveModal.addEventListener("click", e => { if (e.target === saveModal) saveModal.classList.remove("show"); });
+
+document.getElementById("saveConfirm").addEventListener("click", () => {
+  const nm = saveName.value.trim();
+  if (!nm) { toast("Enter a name", true); return; }
+  const saved = getSaved();
+  if (saved[nm] && !confirm(`Overwrite template "${nm}"?`)) return;
+  const snapshot = deepClone(state);
+  snapshot.title = nm;
+  saved[nm] = snapshot;
+  setSaved(saved);
+  saveModal.classList.remove("show");
+  refreshTemplateDropdown();
+  templateSelect.value = "saved:" + nm;
+  currentTemplateKey = "saved:" + nm;
+  toast("Saved ✓");
+});
+
+/* ---------- Manage saved ---------- */
+const manageModal = document.getElementById("manageModal");
+const savedList = document.getElementById("savedList");
+
+document.getElementById("manageBtn").addEventListener("click", () => {
+  renderSavedList();
+  manageModal.classList.add("show");
+});
+document.getElementById("manageClose").addEventListener("click", () => manageModal.classList.remove("show"));
+manageModal.addEventListener("click", e => { if (e.target === manageModal) manageModal.classList.remove("show"); });
+
+function renderSavedList() {
+  const saved = getSaved();
+  const keys = Object.keys(saved);
+  savedList.innerHTML = "";
+  if (!keys.length) {
+    savedList.innerHTML = `<div class="saved-empty">No saved templates yet.<br>Build a workout and tap "Save Template".</div>`;
+    return;
+  }
+  keys.forEach(name => {
+    const item = document.createElement("div");
+    item.className = "saved-item";
+    const nm = document.createElement("div");
+    nm.className = "nm";
+    nm.textContent = name;
+    const loadB = document.createElement("button");
+    loadB.className = "btn-primary";
+    loadB.textContent = "Load";
+    loadB.addEventListener("click", () => {
+      currentTemplateKey = "saved:" + name;
+      loadState(saved[name]);
+      refreshTemplateDropdown();
+      templateSelect.value = "saved:" + name;
+      manageModal.classList.remove("show");
+      toast("Loaded");
+    });
+    const delB = document.createElement("button");
+    delB.className = "btn-danger-ghost";
+    delB.style.border = "1px solid var(--line)";
+    delB.textContent = "Delete";
+    delB.addEventListener("click", () => {
+      if (confirm(`Delete template "${name}"?`)) {
+        const s = getSaved();
+        delete s[name];
+        setSaved(s);
+        renderSavedList();
+        refreshTemplateDropdown();
+        toast("Deleted");
+      }
+    });
+    item.append(nm, loadB, delB);
+    savedList.appendChild(item);
+  });
+}
+
+/* ---------- Reset sets ---------- */
+document.getElementById("resetBtn").addEventListener("click", () => {
+  if (!confirm("Clear all weight/reps entered (keeps exercises & sets)?")) return;
+  state.sections.forEach(s => s.exercises.forEach(e => e.sets.forEach(st => {
+    st.weight = ""; st.reps = ""; st.done = false;
+  })));
+  render(); persistLast();
+  toast("Sets cleared");
+});
+
+/* ---------- CSV export ---------- */
+function csvCell(v) {
+  v = (v == null ? "" : String(v));
+  return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+}
+document.getElementById("csvBtn").addEventListener("click", () => {
+  const rows = [["Workout", "Date", "Section", "Exercise", "Set", "Weight", "Reps", "Done", "Notes"]];
+  const date = new Date().toISOString().slice(0, 10);
+  state.sections.forEach(sec => {
+    sec.exercises.forEach(ex => {
+      if (!ex.sets.length) {
+        rows.push([state.title, date, sec.name, ex.name, "", "", "", "", ex.notes || ""]);
+      }
+      ex.sets.forEach((st, i) => {
+        rows.push([state.title, date, sec.name, ex.name, i + 1, st.weight, st.reps, st.done ? "Y" : "", i === 0 ? (ex.notes || "") : ""]);
+      });
+    });
+  });
+  const csv = rows.map(r => r.map(csvCell).join(",")).join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const safe = (state.title || "workout").replace(/[^\w\-]+/g, "_");
+  a.href = url;
+  a.download = `${safe}_${date}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast("CSV exported");
+});
+
+/* ---------- Rest Timer (sticky bar) ---------- */
+const restBar = document.getElementById("restBar");
+const restFill = document.getElementById("restFill");
+const restTime = document.getElementById("restTime");
+const restReset = document.getElementById("restReset");
+const restPresetBtns = document.querySelectorAll(".rest-presets button");
+
+let restDuration = 90;   // selected preset, default 1:30
+let restRemaining = 90;
+let restInterval = null;
+let restRunning = false;
+let restEndAt = 0;
+
+function fmt(s) {
+  s = Math.max(0, Math.round(s));
+  const m = Math.floor(s / 60);
+  return `${m}:${String(s % 60).padStart(2, "0")}`;
+}
+function paintRest() {
+  restTime.textContent = fmt(restRemaining);
+  const frac = restDuration > 0 ? Math.max(0, restRemaining / restDuration) : 0;
+  restFill.style.width = (frac * 100) + "%";
+  restBar.classList.toggle("running", restRunning);
+}
+function clearRestInterval() { clearInterval(restInterval); restInterval = null; }
+
+function setDuration(sec) {
+  restDuration = sec;
+  restPresetBtns.forEach(b => b.classList.toggle("active", +b.dataset.sec === sec));
+  if (!restRunning) { restRemaining = sec; paintRest(); }
+}
+function startRest() {
+  // (re)start a fresh countdown from the selected duration
+  restRemaining = restDuration;
+  restEndAt = Date.now() + restDuration * 1000;
+  restRunning = true;
+  restBar.classList.remove("done");
+  clearRestInterval();
+  restInterval = setInterval(restTick, 200);
+  paintRest();
+}
+function restTick() {
+  restRemaining = (restEndAt - Date.now()) / 1000;
+  if (restRemaining <= 0) {
+    restRemaining = 0;
+    stopRest();
+    restBar.classList.add("done");
+    buzz();
+  }
+  paintRest();
+}
+function stopRest() { restRunning = false; clearRestInterval(); paintRest(); }
+function toggleRest() {
+  if (restRunning) { stopRest(); return; }
+  if (restRemaining <= 0) restRemaining = restDuration;  // resume or restart
+  restEndAt = Date.now() + restRemaining * 1000;
+  restRunning = true;
+  restBar.classList.remove("done");
+  clearRestInterval();
+  restInterval = setInterval(restTick, 200);
+  paintRest();
+}
+function resetRest() {
+  stopRest();
+  restRemaining = restDuration;
+  restBar.classList.remove("done");
+  paintRest();
+}
+function buzz() {
+  if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value = 880; o.type = "sine";
+    g.gain.setValueAtTime(0.001, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+    o.start(); o.stop(ctx.currentTime + 0.6);
+  } catch {}
+}
+
+restTime.addEventListener("click", toggleRest);
+restReset.addEventListener("click", resetRest);
+restPresetBtns.forEach(b => b.addEventListener("click", () => setDuration(+b.dataset.sec)));
+
+/* ---------- Toast ---------- */
+const toastEl = document.getElementById("toast");
+let toastTimer = null;
+function toast(msg, isErr) {
+  toastEl.textContent = msg;
+  toastEl.className = "toast show" + (isErr ? " err" : "");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toastEl.className = "toast"; }, 1800);
+}
+
+/* ---------- Boot ---------- */
+function boot() {
+  // try restore last session
+  let restored = false;
+  try {
+    const last = JSON.parse(localStorage.getItem(LS_LAST));
+    if (last && last.state && last.state.sections) {
+      state = last.state;
+      currentTemplateKey = last.key || "home-shoulders-arms";
+      restored = true;
+    }
+  } catch {}
+
+  if (!restored) {
+    currentTemplateKey = "home-shoulders-arms";
+    state = loadBuiltin(currentTemplateKey);
+  }
+
+  refreshTemplateDropdown();
+  // set dropdown selection to match
+  if (currentTemplateKey.startsWith("saved:")) {
+    const nm = currentTemplateKey.slice(6);
+    if (getSaved()[nm]) templateSelect.value = "saved:" + nm;
+  } else {
+    if (BUILTINS[currentTemplateKey]) templateSelect.value = "builtin:" + currentTemplateKey;
+  }
+  render();
+  setDuration(90);
+}
+
+boot();
+</script>
+</body>
+</html>
