@@ -463,6 +463,44 @@
   .saved-empty { color: var(--muted); font-size: 14px; text-align: center; padding: 20px; }
 
   .hint { color: var(--muted); font-size: 12px; text-align: center; padding: 8px 0 2px; }
+
+  /* ---------- "Last time" line + history ---------- */
+  .ex-last {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    margin-top: 10px;
+    padding: 8px 10px;
+    background: var(--card-2);
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .ex-last:active { background: #0e1f3a; }
+  .ex-last-label {
+    color: var(--spring);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 11px;
+  }
+  .ex-last-sets { color: var(--text); font-variant-numeric: tabular-nums; }
+  .ex-last-more { margin-left: auto; color: var(--muted); font-size: 12px; font-weight: 600; }
+
+  .hist-list { margin: 2px 0 16px; max-height: 340px; overflow-y: auto; }
+  .hist-item {
+    display: flex; gap: 10px; align-items: baseline;
+    padding: 11px 2px; border-bottom: 1px solid var(--line);
+  }
+  .hist-item:last-child { border-bottom: none; }
+  .hist-date { width: 104px; flex: none; font-size: 13px; color: var(--muted); font-weight: 600; }
+  .hist-sets { display: flex; gap: 6px; flex-wrap: wrap; }
+  .hist-set {
+    background: var(--card-2); border: 1px solid var(--line); border-radius: 7px;
+    padding: 3px 9px; font-size: 14px; font-variant-numeric: tabular-nums; color: var(--text);
+  }
 </style>
 </head>
 <body>
@@ -521,6 +559,17 @@
   </div>
 </div>
 
+<!-- Exercise history -->
+<div class="modal-overlay" id="historyModal">
+  <div class="modal">
+    <h3 id="historyTitle">History</h3>
+    <div class="hist-list" id="historyList"></div>
+    <div class="modal-actions">
+      <button class="btn-outline" id="historyClose">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -533,6 +582,7 @@
 
 const LS_KEY = "wt_saved_templates_v1";
 const LS_LAST = "wt_last_state_v1";
+const LS_HISTORY = "wt_history_v1";
 
 /* ---------- Built-in templates ---------- */
 function uid() { return Math.random().toString(36).slice(2, 9); }
@@ -693,6 +743,49 @@ function persistLast() {
   } catch {}
 }
 
+/* ---------- Per-exercise history (last weights) ---------- */
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(LS_HISTORY)) || {}; }
+  catch { return {}; }
+}
+function setHistory(h) { try { localStorage.setItem(LS_HISTORY, JSON.stringify(h)); } catch {} }
+function exKey(name) { return (name || "").trim().toLowerCase(); }
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+// Record/update today's entry for an exercise as the user types.
+function recordExercise(ex) {
+  const key = exKey(ex.name);
+  if (!key) return;
+  const sets = ex.sets.map(s => ({ w: s.weight || "", r: s.reps || "" }));
+  const hasData = sets.some(s => s.w !== "" || s.r !== "");
+  const h = getHistory();
+  let arr = (h[key] || []).filter(e => e.date !== todayStr());
+  if (hasData) arr.push({ date: todayStr(), name: ex.name, sets });
+  arr.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+  if (arr.length > 60) arr = arr.slice(arr.length - 60);
+  h[key] = arr;
+  setHistory(h);
+}
+// Most recent session before today (what to beat).
+function lastSession(name) {
+  const arr = getHistory()[exKey(name)] || [];
+  for (let i = arr.length - 1; i >= 0; i--) {
+    if (arr[i].date !== todayStr()) return arr[i];
+  }
+  return null;
+}
+function fmtSet(s) {
+  if (s.w && s.r) return `${s.w}×${s.r}`;
+  if (s.w) return `${s.w}`;
+  if (s.r) return `${s.r}`;
+  return "–";
+}
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function fmtDate(d) { const [y, m, day] = d.split("-").map(Number); return `${MONTHS[m - 1]} ${day}`; }
+function fmtDateFull(d) { const [y, m, day] = d.split("-").map(Number); return `${MONTHS[m - 1]} ${day}, ${y}`; }
+
 /* ---------- Render ---------- */
 const app = document.getElementById("app");
 const titleInput = document.getElementById("workoutTitle");
@@ -785,6 +878,19 @@ function renderExercise(section, ex, ei) {
   });
   card.appendChild(table);
 
+  // "Last time" line (previous session's numbers) — tap for full history
+  const last = lastSession(ex.name);
+  if (last) {
+    const lastEl = document.createElement("div");
+    lastEl.className = "ex-last";
+    const setsTxt = last.sets.filter(s => s.w || s.r).map(fmtSet).join("  ·  ");
+    lastEl.innerHTML = `<span class="ex-last-label">Last ${fmtDate(last.date)}</span>` +
+      `<span class="ex-last-sets">${setsTxt || "—"}</span><span class="ex-last-more">history ›</span>`;
+    lastEl.title = "Tap for full history";
+    lastEl.addEventListener("click", () => openHistory(ex.name));
+    card.appendChild(lastEl);
+  }
+
   // Actions
   const actions = document.createElement("div");
   actions.className = "ex-actions";
@@ -839,7 +945,7 @@ function renderSetRow(ex, set, idx) {
   w.placeholder = "–";
   w.value = set.weight;
   w.setAttribute("aria-label", `Set ${idx + 1} weight`);
-  w.addEventListener("input", e => { set.weight = e.target.value; persistLast(); });
+  w.addEventListener("input", e => { set.weight = e.target.value; persistLast(); recordExercise(ex); });
 
   const r = document.createElement("input");
   r.className = "cell" + (set.done ? " done" : "");
@@ -848,7 +954,7 @@ function renderSetRow(ex, set, idx) {
   r.placeholder = "–";
   r.value = set.reps;
   r.setAttribute("aria-label", `Set ${idx + 1} reps`);
-  r.addEventListener("input", e => { set.reps = e.target.value; persistLast(); });
+  r.addEventListener("input", e => { set.reps = e.target.value; persistLast(); recordExercise(ex); });
 
   no.addEventListener("click", () => {
     set.done = !set.done;
@@ -856,7 +962,7 @@ function renderSetRow(ex, set, idx) {
     no.textContent = set.done ? "✓" : (idx + 1);
     w.classList.toggle("done", set.done);
     r.classList.toggle("done", set.done);
-    if (set.done) startRest();   // auto-start the rest timer
+    if (set.done) { startRest(); recordExercise(ex); }   // auto-start rest + log
     persistLast();
   });
 
@@ -963,6 +1069,30 @@ document.getElementById("manageBtn").addEventListener("click", () => {
 });
 document.getElementById("manageClose").addEventListener("click", () => manageModal.classList.remove("show"));
 manageModal.addEventListener("click", e => { if (e.target === manageModal) manageModal.classList.remove("show"); });
+
+/* ---------- Exercise history modal ---------- */
+const historyModal = document.getElementById("historyModal");
+function openHistory(name) {
+  const arr = (getHistory()[exKey(name)] || []).slice()
+    .sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : 0); // newest first
+  document.getElementById("historyTitle").textContent = name;
+  const list = document.getElementById("historyList");
+  list.innerHTML = "";
+  if (!arr.length) {
+    list.innerHTML = `<div class="saved-empty">No history yet.<br>Enter some weights and they'll be logged here.</div>`;
+  } else {
+    arr.forEach(e => {
+      const row = document.createElement("div");
+      row.className = "hist-item";
+      const sets = e.sets.filter(s => s.w || s.r).map(s => `<span class="hist-set">${fmtSet(s)}</span>`).join("");
+      row.innerHTML = `<div class="hist-date">${fmtDateFull(e.date)}</div><div class="hist-sets">${sets || "—"}</div>`;
+      list.appendChild(row);
+    });
+  }
+  historyModal.classList.add("show");
+}
+document.getElementById("historyClose").addEventListener("click", () => historyModal.classList.remove("show"));
+historyModal.addEventListener("click", e => { if (e.target === historyModal) historyModal.classList.remove("show"); });
 
 function renderSavedList() {
   const saved = getSaved();
