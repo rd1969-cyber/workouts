@@ -633,6 +633,25 @@ const BUILTINS = {
       ]),
     ],
   },
+  "gym-chest-legs": {
+    name: "Gym — Chest & Legs",
+    sections: [
+      mkSection("Chest", [
+        mkEx("Smith Machine Chest Press", 3),
+        mkEx("Smith Machine Incline Press", 3),
+        mkEx("Delt Machine", 3),
+      ]),
+      mkSection("Legs", [
+        { id: uid(), name: "Smith Machine Squat", notes: "", sets: [mkSet("210"), mkSet("210"), mkSet("210")] },
+        { id: uid(), name: "Smith Machine RDL", notes: "", sets: [mkSet("130"), mkSet("130"), mkSet("130")] },
+      ]),
+      mkSection("Abs", [
+        { id: uid(), name: "Ab Machine", notes: "", sets: [mkSet("", "15"), mkSet("", "15")] },
+        { id: uid(), name: "Russian Twists", notes: "", sets: [mkSet("", "15"), mkSet("", "15")] },
+        { id: uid(), name: "Glute Raise Machine", notes: "", sets: [mkSet("", "15"), mkSet("", "15")] },
+      ]),
+    ],
+  },
 };
 
 /* ---------- State ---------- */
